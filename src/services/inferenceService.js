@@ -29,9 +29,9 @@ async function predictClassification(model, image) {
         return { result, suggestion };
 
     } catch (error) {
+        console.error('Error during inference:', error); // Tambahkan logging
         throw new InputError(`Terjadi kesalahan input: ${error.message}`);
     }
 }
 
 module.exports = predictClassification;
-

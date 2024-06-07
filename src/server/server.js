@@ -1,116 +1,47 @@
 require('dotenv').config();
-
-const Hapi = require('@hapi/hapi');
-const routes = require('../server/routes');
+const express = require('express');
+const bodyParser = require('body-parser');
+const routes = require('./routes');
 const loadModel = require('../services/loadModel');
 const InputError = require('../exceptions/InputError');
 
 (async () => {
-    const server = Hapi.server({
-        port: process.env.PORT,
-        host: '0.0.0.0',
-        routes: {
-            cors: {
-                origin: ['*'],
-            },
-        },
-    });
+    const app = express();
+    const port = process.env.PORT || 50503;
+    const host = '0.0.0.0'; 
 
+    // Middleware
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: true }));
+
+    // Load model and attach to app
     const model = await loadModel();
-    server.app.model = model;
+    app.locals.model = model;
 
-    server.route(routes);
+    // Routes
+    app.use('/', routes);
 
-    server.ext('onPreResponse', function (request, h) {
-        const response = request.response;
-
-        //  Jika pengguna mengirimkan gambar lebih dari 1MB (1000000 byte) dengan Status Code: 413
-        if (response.isBoom && response.output.statusCode === 413) {
-            const newResponse = h.response({
-                status: 'fail',
-                message: 'Payload content length greater than maximum allowed: 1000000',
-            });
-                        
-            newResponse.code(413);
-            return newResponse;
-        }
-
-        // if (response.isBoom) {
-        //     const newResponse = h.response({
-        //         status: 'fail',
-        //         message: response.message
-        //     })
-        //     newResponse.code(response.statusCode)
-        //     return newResponse;
-        // }
-
-        if (response instanceof InputError || response.isBoom) {
-            const statusCode = response instanceof InputError ? response.statusCode : response.output.statusCode;
-            const newResponse = h.response({
+    // Error handling middleware
+    app.use((err, req, res, next) => {
+        if (err instanceof InputError) {
+            res.status(err.statusCode).json({
                 status: 'fail',
                 message: 'Terjadi kesalahan dalam melakukan prediksi',
             });
-
-            newResponse.code(parseInt(statusCode));
-            return newResponse;
+        } else if (err.status === 413) {
+            res.status(413).json({
+                status: 'fail',
+                message: 'Payload content length greater than maximum allowed: 1000000',
+            });
+        } else {
+            res.status(err.status || 500).json({
+                status: 'fail',
+                message: err.message,
+            });
         }
-
-        return h.continue;
     });
 
-    await server.start();
-    console.log(`Server start at: ${server.info.uri}`);
+    app.listen(port, host, () => { // Listen on host
+        console.log(`Server started at http://${host}:${port}`);
+    });
 })();
-
- 
-// const Hapi = require('@hapi/hapi');
-// const routes = require('../server/routes');
-// const loadModel = require('../services/loadModel');
-// const InputError = require('../exceptions/InputError');
- 
-// (async () => {
-//     const server = Hapi.server({
-//         port: 3000,
-//         host: 'localhost',
-//         routes: {
-//             cors: {
-//                 origin: ['*'],
-//             },
-//         },
-//     });
- 
-//     const model = await loadModel();
-//     server.app.model = model;
- 
-//     server.route(routes);
- 
-//     server.ext('onPreResponse', function (request, h) {
-//         const response = request.response;
-
-//         if (response.isBoom && response.output.statusCode === 413) {
-//             const newResponse = h.response({
-//                 status: 'fail',
-//                 message: 'Payload content length greater than maximum allowed: 1000000',
-//             });
-            
-//             newResponse.code(413);
-//             return newResponse;
-//         }
-
-//         if (response instanceof InputError || response.isBoom) {
-//             const statusCode = response instanceof InputError ? response.statusCode : response.output.statusCode;
-//             const newResponse = h.response({
-//                 status: 'fail',
-//                 message: 'Terjadi kesalahan dalam melakukan prediksi',
-//             });
-
-//             newResponse.code(parseInt(statusCode));
-//             return newResponse;
-//         }
- 
-//         return h.continue;
-//     });
- 
-//     await server.start();
-//     console.log(`Server start at: ${server.info.uri}`);
-// })();
