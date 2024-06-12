@@ -1,7 +1,7 @@
 const express = require('express');
 const { postPredictHandler, getHistoriesHandler } = require('./handler');
 const multer = require('multer');
-const upload = multer({ limits: { fileSize: 1000000 } });
+const upload = multer({ limits: { fileSize: 5000000 } });
 
 const router = express.Router();
 

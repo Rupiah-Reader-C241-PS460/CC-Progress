@@ -13,9 +13,6 @@ async function postPredictHandler(req, res, next) {
             throw new InputError('No image file provided');
         }
 
-        console.log('File received:', file); // Added logging
-        console.log('Model:', model); // Added logging
-
         const { result, suggestion } = await predictClassification(model, file.buffer);
         const id = crypto.randomUUID();
         const createdAt = new Date().toISOString();
@@ -35,7 +32,6 @@ async function postPredictHandler(req, res, next) {
             data: data
         });
     } catch (error) {
-        console.error('Error during prediction:', error); // Added logging
         next(error);
     }
 }
@@ -61,7 +57,6 @@ async function getHistoriesHandler(req, res, next) {
             data: data
         });
     } catch (error) {
-        console.error('Error fetching histories:', error); // Added logging
         next(error);
     }
 }
