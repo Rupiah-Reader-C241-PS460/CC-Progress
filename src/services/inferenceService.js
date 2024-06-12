@@ -1,30 +1,35 @@
 const tf = require('@tensorflow/tfjs-node');
 const InputError = require('../exceptions/InputError');
 
+function findLargestByIndex(arr) {
+    let max = arr[0];
+    let maxIndex = 0;
+
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] > max) {
+            max = arr[i];
+            maxIndex = i;
+        }
+    }
+
+    return maxIndex;
+}
+
+const labels = ["100K", "10K", "1K", "20K", "2K", "50K", "5K"];
+
 async function predictClassification(model, image) {
     try {
-        const tensor = tf.node
-            .decodeJpeg(image)
-            .resizeNearestNeighbor([224, 224])
-            .expandDims()
-            .toFloat();
+        const input = tf.node.decodeImage(image);
+        const preprocessedInput = tf.div(input, tf.scalar(255.0));
+        const resizedInput = tf.image.resizeBilinear(preprocessedInput, [256, 256]);
+        const reshapedInput = resizedInput.reshape([-1, ...resizedInput.shape]);
 
-        const prediction = model.predict(tensor);
-        const score = await prediction.data();
-        const confidenceScore = score[0] * 100;
+        const prediction = model.execute(reshapedInput);
+        const confidenceScores = await prediction.data();
 
-
-        let result, suggestion;
-        
-        // kondisi jika rentang nilai diatas 50 dan dibawah nya untuk mendeteksi cancer atau bukan
-        if (confidenceScore > 50) {
-            result = "Cancer";
-            suggestion = "Segera periksa ke dokter!";
-        }
-        else{
-            result = "Non-cancer";
-            suggestion = "Anda sehat!";
-        }
+        const maxIndex = findLargestByIndex(confidenceScores);
+        const result = labels[maxIndex];
+        const suggestion = `Prediksi uang: ${result}`;
 
         return { result, suggestion };
 
