@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
-const loadModel = require('../services/loadModel');
-const InputError = require('../exceptions/InputError');
+const loadModel = require('../services/loadModel'); // Correct import
+const ValidationError = require('../exceptions/ValidationError');
 
 (async () => {
     const app = express();
@@ -15,15 +15,20 @@ const InputError = require('../exceptions/InputError');
     app.use(bodyParser.urlencoded({ extended: true }));
 
     // Load model and attach to app
-    const model = await loadModel();
-    app.locals.model = model;
+    try {
+        const model = await loadModel();
+        app.locals.model = model;
+    } catch (error) {
+        console.error('Error loading the model:', error);
+        process.exit(1);
+    }
 
     // Routes
     app.use('/', routes);
 
     // Error handling middleware
     app.use((err, req, res, next) => {
-        if (err instanceof InputError) {
+        if (err instanceof ValidationError) {
             res.status(err.statusCode).json({
                 status: 'fail',
                 message: 'Terjadi kesalahan dalam melakukan prediksi',

@@ -1,8 +1,8 @@
-const predictClassification = require('../services/inferenceService');
+const predictClassification = require('../services/predictionService');
 const crypto = require('crypto');
 const storeData = require('../services/storeData');
 const { Firestore } = require('@google-cloud/firestore');
-const InputError = require('../exceptions/InputError');
+const ValidationError = require('../exceptions/ValidationError');
 
 async function postPredictHandler(req, res, next) {
     try {
@@ -10,7 +10,7 @@ async function postPredictHandler(req, res, next) {
         const { model } = req.app.locals;
 
         if (!file) {
-            throw new InputError('No image file provided');
+            throw new ValidationError('No image file provided');
         }
 
         const { result, suggestion } = await predictClassification(model, file.buffer);
