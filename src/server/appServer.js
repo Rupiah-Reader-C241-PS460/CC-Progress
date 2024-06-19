@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
-const loadModel = require('../services/loadModel'); // Correct import
+const loadModel = require('../services/loadModel');
 const ValidationError = require('../exceptions/ValidationError');
 
 (async () => {
@@ -10,11 +10,9 @@ const ValidationError = require('../exceptions/ValidationError');
     const port = process.env.PORT || 50503;
     const host = '0.0.0.0'; 
 
-    // Middleware
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
 
-    // Load model and attach to app
     try {
         const model = await loadModel();
         app.locals.model = model;
@@ -23,10 +21,8 @@ const ValidationError = require('../exceptions/ValidationError');
         process.exit(1);
     }
 
-    // Routes
     app.use('/', routes);
 
-    // Error handling middleware
     app.use((err, req, res, next) => {
         if (err instanceof ValidationError) {
             res.status(err.statusCode).json({
@@ -46,7 +42,7 @@ const ValidationError = require('../exceptions/ValidationError');
         }
     });
 
-    app.listen(port, host, () => { // Listen on host
+    app.listen(port, host, () => { 
         console.log(`Server started at http://${host}:${port}`);
     });
 })();
